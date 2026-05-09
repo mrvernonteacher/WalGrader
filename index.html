@@ -306,13 +306,19 @@
             background-color: rgba(16, 185, 129, 0.3);
         }
         
-        /* ---------------------------------------------------
+/* ---------------------------------------------------
            MOBILE OPTIMIZATION (Calculator Mode)
            --------------------------------------------------- */
         @media (max-width: 768px) {
             body { padding: 10px; }
             .container { padding: 0 15px 20px 15px; }
             
+            /* FIX 1: Un-stick the massive header on mobile so it scrolls out of the way */
+            .sticky-top {
+                position: relative; 
+                padding-top: 15px;
+            }
+
             /* Stack header and controls for easy tapping */
             .header, .controls {
                 flex-direction: column;
@@ -325,16 +331,20 @@
             .student-info input { width: 100%; box-sizing: border-box; }
             .score-display { margin-top: 5px; }
             
+            /* FIX 2: Force uniform widths and heights on all buttons, labels, and spans */
             .controls { justify-content: center; }
-            .btn-separator { display: none; } /* Hide vertical divider line */
-            .controls button, .controls label.btn { 
-                justify-content: center; 
+            .btn-separator { display: none; } 
+            
+            .controls button, .controls label.btn, .save-status { 
                 width: 100%; 
                 margin-left: 0 !important; 
                 padding: 12px; 
                 font-size: 1em;
+                box-sizing: border-box;
+                display: flex;
+                justify-content: center;
+                align-items: center;
             }
-            .save-status { text-align: center; margin: 0; }
             
             /* Table adjustments for strict grading */
             .rubric-table th, .rubric-table td { padding: 10px 4px; }
