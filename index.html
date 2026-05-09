@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WalGrader</title>
+    <title>Dynamic Rubric Grader</title>
     <link rel="icon" type="image/png" href="walgraderfavicon.png">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
@@ -266,6 +266,45 @@
             font-family: inherit;
         }
         [data-theme="dark"] #loadingOverlay { background: rgba(18, 18, 18, 0.85); color: #60a5fa; }
+
+        /* Floating Auto-Fill Button */
+        #smartFillBtn {
+            position: fixed;
+            bottom: -100px; 
+            right: 40px;
+            background-color: var(--success);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 1.05em;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            z-index: 2000;
+            opacity: 0;
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease, transform 0.2s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        #smartFillBtn.visible {
+            bottom: 40px;
+            opacity: 1;
+        }
+        #smartFillBtn:hover {
+            transform: translateY(-3px) scale(1.02);
+            background-color: var(--primary);
+        }
+        [data-theme="dark"] #smartFillBtn {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        [data-theme="dark"] #smartFillBtn:hover {
+            background-color: rgba(16, 185, 129, 0.3);
+        }
                       
     </style>
 </head>
@@ -332,6 +371,10 @@
         <textarea id="overallCommentsInput" class="comments-input" placeholder="Type overall project feedback here..." oninput="updateOverallComment(this)"></textarea>
     </div>
 </div>
+
+<button id="smartFillBtn" onclick="autoFillMaxPoints()" title="Fills max points for all blank rows above your furthest graded row">
+    ✅ Fill Max Down To Here
+</button>
 
 <script>
     let isEditMode = false;
@@ -497,6 +540,9 @@
         updateMaxScore();
         clearGrades();
         
+        // Listen for scrolling to show the floating auto-fill button
+        window.addEventListener('scroll', handleScrollForFloatBtn);
+        
         // --- EXISTING LOCAL LOADERS ---
         document.getElementById('uploadRubric').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -551,7 +597,7 @@
             e.target.value = ""; 
         });
 
-// --- NEW AI AUTO-BUILD LISTENER ---
+        // --- NEW AI AUTO-BUILD LISTENER ---
         document.getElementById('autoBuildFile').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -605,6 +651,61 @@
         });
     }
 
+    function handleScrollForFloatBtn() {
+        const btn = document.getElementById('smartFillBtn');
+        if (!btn) return;
+        // Show button if scrolled down slightly and NOT in edit mode
+        if (window.scrollY > 150 && !isEditMode) {
+            btn.classList.add('visible');
+        } else {
+            btn.classList.remove('visible');
+        }
+    }
+
+    // --- AUTO FILL LOGIC ---
+    function autoFillMaxPoints() {
+        if (isEditMode) return;
+
+        // Find the lowest/furthest row that has been manually graded
+        let lastGradedIndex = -1;
+        for (let i = currentRubric.criteria.length - 1; i >= 0; i--) {
+            if (isGraded[i]) {
+                lastGradedIndex = i;
+                break;
+            }
+        }
+
+        let limit = lastGradedIndex !== -1 ? lastGradedIndex : currentRubric.criteria.length;
+
+        // If no grades exist at all, confirm before blindly filling the entire rubric
+        if (lastGradedIndex === -1) {
+            if (!confirm("You haven't selected any grades yet. Do you want to automatically fill MAX POINTS for the ENTIRE rubric?")) {
+                return;
+            }
+        }
+
+        // Loop from top down to the lowest graded row and fill in the missing gaps
+        for (let i = 0; i < limit; i++) {
+            if (!isGraded[i]) {
+                let maxPts = -Infinity;
+                let maxIdx = -1;
+                
+                // Find the level with the highest point value for this criterion
+                currentRubric.criteria[i].levels.forEach((l, lIdx) => {
+                    if (l.points > maxPts) { 
+                        maxPts = l.points; 
+                        maxIdx = lIdx; 
+                    }
+                });
+                
+                // Assign the max score
+                if (maxIdx !== -1) {
+                    selectScore(i, maxIdx, maxPts);
+                }
+            }
+        }
+    }
+
     function updateMaxScore() {
         let max = currentRubric.criteria.reduce((total, crit) => {
             if (!crit.levels || crit.levels.length === 0) return total;
@@ -642,6 +743,9 @@
             editEls.forEach(el => el.style.display = 'none');
             gradeEls.forEach(el => el.style.display = 'inline-block');
         }
+        
+        // Hide or show the float button based on the mode change
+        handleScrollForFloatBtn();
         renderRubric();
     }
 
