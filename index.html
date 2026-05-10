@@ -1020,8 +1020,12 @@
                 tr.appendChild(td);
             });
 
+            // FILL EMPTY CELLS CORRECTLY (No more html += crashes!)
             let emptyCellsRequired = maxCols - crit.levels.length;
-            for (let i = 0; i < emptyCellsRequired; i++) { html += `<td></td>`; }
+            for (let i = 0; i < emptyCellsRequired; i++) { 
+                const emptyTd = document.createElement('td');
+                tr.appendChild(emptyTd); 
+            }
 
             if (isEditMode) {
                 const emptyEndTd = document.createElement('td');
