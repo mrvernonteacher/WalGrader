@@ -46,7 +46,7 @@
             --text-light: #aaa;
             --shadow: 0 4px 10px rgba(0,0,0,0.5);
             --card-bg: #1a1a1a;
-            --header-bg: rgba(18, 18, 18, 0.25); /* Properly dark & transparent */
+            --header-bg: rgba(18, 18, 18, 0.25); 
             --input-bg: #2a2a2a;
             --walton-red: #ff6b6b;
         }
@@ -261,10 +261,6 @@
         .edit-pts { width: 60px; font-weight: bold; color: var(--walton-red); }
         .move-controls { display: flex; gap: 4px; margin-top: 8px; }
 
-        /* Dark mode overrides for header transparent boxes to force consistency */
-        [data-theme="dark"] .header { background: rgba(0, 0, 0, 0.2); border-color: #444; }
-        [data-theme="dark"] .controls { background: rgba(0, 0, 0, 0.2); border-color: #444; }
-
         /* Loading Screen CSS */
         #loadingOverlay {
             display: none;
@@ -400,6 +396,9 @@
             <label class="btn btn-warning edit-only" for="autoBuildFile" style="margin-left: auto;" title="Auto-Build Rubric (PDF/Image)">✨ Auto-Build</label>
             <input type="file" id="autoBuildFile" accept=".pdf, .png, .jpg, .jpeg">
 
+            <label class="btn btn-purple edit-only" for="teachAIFile" title="Upload a previously graded student JSON to teach the AI your comment style">🧠 Teach AI</label>
+            <input type="file" id="teachAIFile" accept=".json">
+
             <label class="btn edit-only" for="uploadRubric" title="Load Rubric (.json)">📂 Rubric</label>
             <input type="file" id="uploadRubric" accept=".json">
             
@@ -460,6 +459,7 @@
     let currentRubric = {
         title: "Imagine the Future",
         aiPrompt: "Don't grade the Sales Pitch Video or the physical test plan.",
+        examples: [], // Hidden array to store AI training data
         criteria: [
             {
                 name: "Title",
@@ -645,6 +645,30 @@
                         renderRubric();
                     } else { alert('Invalid student data file.'); }
                 } catch (err) { alert('Error parsing Student JSON file.'); }
+            };
+            reader.readAsText(file);
+            e.target.value = ""; 
+        });
+
+        // --- NEW: TEACH AI LISTENER ---
+        document.getElementById('teachAIFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.type === "StudentGradeRecord") {
+                        if (!currentRubric.examples) currentRubric.examples = [];
+                        
+                        currentRubric.examples.push({
+                            scores: data.scores,
+                            comments: data.comments
+                        });
+                        
+                        alert(`Successfully learned from ${data.studentName || "the example"}!\nTotal examples stored: ${currentRubric.examples.length}\n\nDon't forget to click '💾 Template' to permanently save this new knowledge!`);
+                    } else { alert('Invalid file. Please upload a previously graded student JSON.'); }
+                } catch (err) { alert('Error parsing JSON file.'); }
             };
             reader.readAsText(file);
             e.target.value = ""; 
@@ -1034,7 +1058,7 @@
                     `;
                 } else {
                     td.innerHTML = `
-                        <span class="level-pts">${level.points}</span>
+                        <span class="level-pts">${level.points} pts</span>
                         <span class="level-title">${escapeHTML(level.title)}</span>
                         <div class="level-desc">${escapeHTML(level.desc)}</div>
                     `;
