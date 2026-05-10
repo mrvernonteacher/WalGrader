@@ -175,6 +175,7 @@
         [data-theme="dark"] .btn-warning { background-color: rgba(248, 113, 113, 0.15); color: #fca5a5; border-color: rgba(248, 113, 113, 0.3); }
         .btn-info { background-color: var(--secondary); }
         .btn-purple { background-color: #8e44ad; color: white; }
+        .btn-darkred { background-color: #900c3f; color: white; }
         .theme-toggle { margin-left: auto; background-color: #34495e; padding: 8px 10px; }
         [data-theme="dark"] .theme-toggle { background-color: var(--card-bg); }
         
@@ -258,10 +259,6 @@
         .edit-flex { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
         .edit-pts { width: 60px; font-weight: bold; color: var(--walton-red); }
         .move-controls { display: flex; gap: 4px; margin-top: 8px; }
-
-        /* Dark mode overrides for header transparent boxes */
-        [data-theme="dark"] .header { background-color: rgba(0, 0, 0, 0.2); border-color: #444; }
-        [data-theme="dark"] .controls { background: rgba(0, 0, 0, 0.2); border-color: #444; }
 
         /* Loading Screen CSS */
         #loadingOverlay {
@@ -348,7 +345,7 @@
 <div id="loadingOverlay">
     <img src="WalEngSpin.gif" alt="Loading..." style="width: 240px; margin-bottom: 20px;">
     <h2 id="loadingText" style="margin:0;">AI is processing...</h2>
-    <p style="margin-top:5px; color:var(--text-light);">This usually takes 5-15 seconds.</p>
+    <p id="loadingSubtext" style="margin-top:5px; color:var(--text-light);">This usually takes 5-15 seconds.</p>
 </div>
 
 <div class="container">
@@ -378,8 +375,11 @@
             <button id="toggleEditBtn" class="btn-warning" onclick="toggleEditMode()" title="Enter Edit Mode">✏️ Edit</button>
             <span class="btn-separator" style="border-left: 2px solid var(--border); height: 30px; margin: 0 10px;"></span>
             
-            <label class="btn btn-purple grade-only" for="autoGradeFile" title="Have AI Grade a Student PDF">🤖 AI Grade</label>
-            <input type="file" id="autoGradeFile" accept=".pdf, .png, .jpg, .jpeg">
+            <label class="btn btn-purple grade-only" for="autoGradeFile" title="Have AI Grade Student PDFs (Review One-by-One)">🤖 AI Grade</label>
+            <input type="file" id="autoGradeFile" accept=".pdf, .png, .jpg, .jpeg" multiple>
+
+            <label class="btn btn-darkred grade-only" for="batchGradeFile" title="Silent Batch Auto-Grade directly to Folder">🚀 Batch</label>
+            <input type="file" id="batchGradeFile" accept=".pdf, .png, .jpg, .jpeg" multiple>
 
             <label class="btn btn-info grade-only" for="loadStudentFile" title="Load Student Data">📂 Load</label>
             <input type="file" id="loadStudentFile" accept=".json">
@@ -387,7 +387,7 @@
             <button class="btn grade-only" onclick="selectSaveDirectory()" title="Set Save Folder">📁 Save</button>
             <span id="saveStatus" class="save-status grade-only">No folder</span>
             
-            <button class="btn-success grade-only" onclick="exportStudentDataAndReport()" title="Export Student (HTML Report & Data)">🖨️ Export</button>
+            <button id="exportMainBtn" class="btn-success grade-only" onclick="exportStudentDataAndReport()" title="Export Student (HTML Report & Data)">🖨️ Export</button>
             
             <button id="themeToggleBtn" class="btn theme-toggle grade-only" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
             
@@ -421,6 +421,9 @@
     let reportDirectoryHandle = null; 
     let jsonDirectoryHandle = null;
 
+    // The Grading Queues
+    let reviewQueue = [];
+    
     // YOUR GOOGLE APPS SCRIPT WEB APP URL
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzp9F_goegloh-FxMFXpGw3FLmkA6kD_nYbNnQs5uBZCr54DLO1euaT2S19hzvARCa_/exec";
 
@@ -580,6 +583,7 @@
 
         updateMaxScore();
         clearGrades();
+        updateExportButtonUI();
         
         window.addEventListener('scroll', handleScrollForFloatBtn);
         
@@ -671,20 +675,110 @@
             reader.readAsDataURL(file);
         });
 
-        // --- ACTION 2: AUTO-GRADE LISTENER ---
-        document.getElementById('autoGradeFile').addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // --- ACTION 2: REVIEW MODE LISTENER (QUEUE) ---
+        document.getElementById('autoGradeFile').addEventListener('change', function(e) {
+            if(e.target.files.length === 0) return;
+            reviewQueue = Array.from(e.target.files);
+            e.target.value = ''; // Reset input
+            processNextReview();
+        });
 
-            // Name guesser
-            let fileNameStr = file.name.replace(/\.[^/.]+$/, ""); 
-            if(document.getElementById('studentName').value === "") {
-                document.getElementById('studentName').value = fileNameStr;
+        // --- ACTION 3: SILENT BATCH MODE LISTENER ---
+        document.getElementById('batchGradeFile').addEventListener('change', async function(e) {
+            const files = Array.from(e.target.files);
+            if(files.length === 0) return;
+            e.target.value = ''; // Reset
+            
+            if (!reportDirectoryHandle) {
+                alert("Please select a master folder to save your Batch reports into first.");
+                await selectSaveDirectory();
+                if (!reportDirectoryHandle) return; 
             }
 
-            document.getElementById('loadingText').innerText = "AI is grading student work...";
             document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            for (let i = 0; i < files.length; i++) {
+                document.getElementById('loadingText').innerText = `Batch Grading: ${i + 1} of ${files.length}`;
+                document.getElementById('loadingSubtext').innerText = `Processing ${files[i].name}...`;
+                await processSingleBatchFile(files[i]);
+            }
 
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('loadingSubtext').innerText = "This usually takes 5-15 seconds.";
+            alert(`Batch Complete! ${files.length} reports saved to your folder.`);
+        });
+    }
+
+    // --- GRADING PIPELINE LOGIC ---
+
+    async function processNextReview() {
+        if (reviewQueue.length === 0) {
+            updateExportButtonUI();
+            return;
+        }
+
+        const file = reviewQueue.shift();
+        updateExportButtonUI();
+
+        document.getElementById('loadingText').innerText = `AI is grading: ${file.name}`;
+        document.getElementById('loadingOverlay').style.display = 'flex';
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            const dataUrl = event.target.result;
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "grade",
+                        fileBase64: dataUrl.split(',')[1],
+                        mimeType: file.type,
+                        rubric: currentRubric,
+                        customPrompt: currentRubric.aiPrompt || ""
+                    })
+                });
+
+                const rawResponse = await response.text();
+                let cleanJson = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(cleanJson);
+
+                if (result && result.error) throw new Error("Google Script says: " + result.error);
+                
+                if (result && result.grades) {
+                    clearGrades(); // Wipe previous student
+                    
+                    // Name assignment logic
+                    let bestName = result.studentName || "";
+                    if (bestName.trim() === "" || bestName === "Unknown Student") {
+                        bestName = file.name.replace(/\.[^/.]+$/, ""); // Fallback to filename
+                    }
+                    document.getElementById('studentName').value = bestName;
+
+                    result.grades.forEach(g => {
+                        let matchedLevelIdx = currentRubric.criteria[g.criterionIndex].levels.findIndex(l => l.points === g.points);
+                        if(matchedLevelIdx !== -1) {
+                            selectScore(g.criterionIndex, matchedLevelIdx, g.points);
+                        } else {
+                            manualScoreUpdate(g.criterionIndex, g.points);
+                        }
+                        updateRowComment(g.criterionIndex, { value: g.comment });
+                    });
+                    
+                    renderRubric(); 
+                } else throw new Error("AI missed the grading format.");
+
+            } catch (err) {
+                console.error(err); 
+                alert(`Grading failed for ${file.name}!\n\n` + err.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function processSingleBatchFile(file) {
+        return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = async function(event) {
                 const dataUrl = event.target.result;
@@ -704,36 +798,79 @@
                     let cleanJson = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                     const result = JSON.parse(cleanJson);
 
-                    if (result && result.error) throw new Error("Google Script says: " + result.error);
-                    
-                    if (result && result.grades) {
-                        result.grades.forEach(g => {
-                            // Find the exact level index that matches the returned points
-                            let matchedLevelIdx = currentRubric.criteria[g.criterionIndex].levels.findIndex(l => l.points === g.points);
-                            if(matchedLevelIdx !== -1) {
-                                selectScore(g.criterionIndex, matchedLevelIdx, g.points);
-                            } else {
-                                // Fallback manual update if AI gave a weird partial point value
-                                manualScoreUpdate(g.criterionIndex, g.points);
-                            }
-                            // Inject brief feedback
-                            updateRowComment(g.criterionIndex, { value: g.comment });
-                        });
+                    if (result && result.grades && !result.error) {
                         
-                        // Re-render the rubric to show the newly populated comments and selected borders
-                        renderRubric(); 
-                        alert("Auto-Grading Complete!\nPlease review the AI's suggestions before exporting.");
-                    } else throw new Error("AI missed the grading format.");
+                        let batchScores = {};
+                        let batchComments = {};
+                        let batchGraded = {};
+                        currentRubric.criteria.forEach((_, idx) => {
+                            batchScores[idx] = 0; batchComments[idx] = ''; batchGraded[idx] = false;
+                        });
 
+                        let bestName = result.studentName || "";
+                        if (bestName.trim() === "" || bestName === "Unknown Student") {
+                            bestName = file.name.replace(/\.[^/.]+$/, ""); 
+                        }
+
+                        result.grades.forEach(g => {
+                            batchScores[g.criterionIndex] = g.points;
+                            batchGraded[g.criterionIndex] = true;
+                            batchComments[g.criterionIndex] = g.comment;
+                        });
+
+                        let totalScore = 0;
+                        for (let key in batchScores) { totalScore += batchScores[key]; }
+
+                        // Generate Files
+                        let safeStudent = bestName.replace(/[^a-z0-9\s]/gi, '_').trim();
+                        let safeProject = (currentRubric.title || "Project").replace(/[^a-z0-9\s]/gi, '_').trim();
+                        let jsonFilename = `${safeStudent} - ${safeProject}.json`;
+                        let reportFilename = `${safeStudent} - ${safeProject} - ${totalScore}.html`;
+
+                        const exportData = {
+                            type: "StudentGradeRecord", studentName: bestName, projectTitle: currentRubric.title,
+                            rubric: currentRubric, scores: batchScores, comments: batchComments, overallComment: "", isGraded: batchGraded
+                        };
+                        const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                        
+                        // Temporarily swap global state to use the generator function cleanly
+                        let tempScores = scores; let tempComments = comments; let tempGraded = isGraded;
+                        scores = batchScores; comments = batchComments; isGraded = batchGraded;
+                        const htmlReportString = generateStandaloneReport(bestName, currentRubric.title, totalScore);
+                        scores = tempScores; comments = tempComments; isGraded = tempGraded;
+                        
+                        const reportBlob = new Blob([htmlReportString], { type: 'text/html' });
+
+                        // Save silently
+                        if (reportDirectoryHandle && jsonDirectoryHandle) {
+                            await silentWriteFile(jsonDirectoryHandle, jsonFilename, jsonBlob);
+                            await silentWriteFile(reportDirectoryHandle, reportFilename, reportBlob);
+                        }
+                    }
                 } catch (err) {
-                    console.error(err); alert("Auto-Grade Failed!\n\n" + err.message);
-                } finally {
-                    document.getElementById('loadingOverlay').style.display = 'none'; e.target.value = '';
+                    console.error(`Batch failed for ${file.name}`, err);
                 }
+                resolve(); // Move to next regardless of success/fail
             };
             reader.readAsDataURL(file);
         });
     }
+
+    function updateExportButtonUI() {
+        const btn = document.getElementById('exportMainBtn');
+        if (reviewQueue.length > 0) {
+            btn.innerHTML = `💾 Save & Next (${reviewQueue.length} left)`;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-purple');
+        } else {
+            btn.innerHTML = `🖨️ Export`;
+            btn.classList.remove('btn-purple');
+            btn.classList.add('btn-success');
+        }
+    }
+
+
+    // --- STANDARD UI LOGIC ---
 
     function handleScrollForFloatBtn() {
         const btn = document.getElementById('smartFillBtn');
@@ -812,7 +949,6 @@
             titleContainer.innerHTML = `<h1>${escapeHTML(currentRubric.title || 'Untitled Project')}</h1>`;
         }
         
-        // Restore AI Prompt to text box on render
         document.getElementById('aiPromptInput').value = currentRubric.aiPrompt || "";
 
         const table = document.getElementById('rubricTable');
@@ -829,7 +965,6 @@
             if (isGraded[critIndex] === undefined) isGraded[critIndex] = false;
 
             const tr = document.createElement('tr');
-            
             const titleTd = document.createElement('td');
             titleTd.className = 'criterion-title';
             
@@ -886,10 +1021,7 @@
             });
 
             let emptyCellsRequired = maxCols - crit.levels.length;
-            for (let i = 0; i < emptyCellsRequired; i++) {
-                const emptyTd = document.createElement('td');
-                tr.appendChild(emptyTd);
-            }
+            for (let i = 0; i < emptyCellsRequired; i++) { html += `<td></td>`; }
 
             if (isEditMode) {
                 const emptyEndTd = document.createElement('td');
@@ -1219,7 +1351,15 @@
                 fallbackDownload(jsonFilename, jsonBlob);
                 fallbackDownload(reportFilename, reportBlob);
             }
-            clearGrades();
+            
+            // Queue Logic: If there are files left, load the next one automatically instead of just clearing
+            if (reviewQueue.length > 0) {
+                processNextReview();
+            } else {
+                clearGrades();
+                updateExportButtonUI();
+            }
+            
         } catch (error) {
             console.error("Export Error", error);
             alert("An error occurred while generating the files.");
