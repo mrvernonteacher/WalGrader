@@ -792,4 +792,97 @@ function generateStandaloneReport(studentName, projectTitle, totalScore) {
 <body>
 <div class="header">
     <h1>${escapeHTML(projectTitle)}</h1>
-    <h2>Student: <strong>${
+    <h2>Student: <strong>${escapeHTML(studentName)}</strong></h2>
+    <div class="total-score">Total Score: ${totalScore} / ${document.getElementById('maxScore').innerText}</div>
+</div>
+<table>`;
+
+    currentRubric.criteria.forEach((crit, i) => {
+        html += `<tr><td class="crit-title">${escapeHTML(crit.name)}</td>`;
+        crit.levels.forEach((level) => {
+            let isSelected = (isGraded[i] && scores[i] === level.points) ? 'selected' : '';
+            html += `<td class="level-cell ${isSelected}"><span class="level-pts">${level.points} pts</span><span class="level-title">${escapeHTML(level.title)}</span><span>${escapeHTML(level.desc)}</span></td>`;
+        });
+        let emptyCellsRequired = maxCols - crit.levels.length;
+        for (let j = 0; j < emptyCellsRequired; j++) { html += `<td></td>`; }
+        html += `<td class="score-col">${scores[i]}</td></tr>`;
+        if (comments[i] && comments[i].trim() !== '') {
+            html += `<tr class="comment-row"><td colspan="${maxCols + 2}"><div class="comment-box"><strong>Feedback:</strong><br>${escapeHTML(comments[i])}</div></td></tr>`;
+        }
+    });
+    html += `</table>`;
+    if (overallComment && overallComment.trim() !== '') {
+        html += `<div class="overall-comments"><h3>Overall Project Feedback</h3><div>${escapeHTML(overallComment)}</div></div>`;
+    }
+    html += `</body></html>`;
+    return html;
+}
+
+async function exportStudentDataAndReport() {
+    let studentName = document.getElementById('studentName').value.trim();
+    
+    if (isSetupOpen) toggleSetup();
+
+    let safeStudent = studentName ? studentName.replace(/[^a-z0-9\s]/gi, '_').trim() : "Unnamed";
+    let projectTitle = currentRubric.title || "Untitled Project";
+    let safeProject = projectTitle.replace(/[^a-z0-9\s]/gi, '_').trim();
+    let totalScore = document.getElementById('totalScore').innerText;
+
+    let jsonFilename = `${safeStudent} - ${safeProject}.json`;
+    let reportFilename = `${safeStudent} - ${safeProject}.html`;
+
+    const exportData = { type: "StudentGradeRecord", studentName: studentName, projectTitle: projectTitle, rubric: currentRubric, scores: scores, comments: comments, overallComment: overallComment, isGraded: isGraded };
+    const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const htmlReportString = generateStandaloneReport(studentName, projectTitle, totalScore);
+    const reportBlob = new Blob([htmlReportString], { type: 'text/html' });
+
+    try {
+        if (reportDirectoryHandle && jsonDirectoryHandle) {
+            await cleanupOldReports(reportDirectoryHandle, safeStudent, safeProject, reportFilename);
+            const jsonSuccess = await silentWriteFile(jsonDirectoryHandle, jsonFilename, jsonBlob);
+            const reportSuccess = await silentWriteFile(reportDirectoryHandle, reportFilename, reportBlob);
+            if (!jsonSuccess || !reportSuccess) {
+                fallbackDownload(jsonFilename, jsonBlob); fallbackDownload(reportFilename, reportBlob);
+            }
+        } else {
+            fallbackDownload(jsonFilename, jsonBlob); fallbackDownload(reportFilename, reportBlob);
+        }
+        
+        if (reviewQueue.length > 0) { processNextReview(); } 
+        else { clearGrades(); updateExportButtonUI(); }
+        
+    } catch (error) { console.error("Export Error", error); alert("An error occurred while generating the files."); }
+}
+
+async function exportRubricTemplate() {
+    const dataStr = JSON.stringify(currentRubric, null, 2);
+    const defaultName = (currentRubric.title || "Rubric").replace(/[^a-z0-9\s]/gi, '_').trim() + "_Template.json";
+    
+    try {
+        if (window.showSaveFilePicker) {
+            const handle = await window.showSaveFilePicker({
+                suggestedName: defaultName,
+                types: [{ description: 'JSON File', accept: {'application/json': ['.json']} }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(dataStr);
+            await writable.close();
+        } else {
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            fallbackDownload(defaultName, blob);
+        }
+    } catch (err) {
+        if (err.name !== 'AbortError') {
+            console.error('Save failed', err);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            fallbackDownload(defaultName, blob);
+        }
+    }
+}
+
+function escapeHTML(str) {
+    if(!str) return '';
+    return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+}
+
+window.onload = init;
