@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WalGrader</title>
-    <link rel="icon" type="image/png" href="walgraderfavicon.png">
+    <title>Graider</title>
+    <link rel="icon" type="image/png" href="graiderfavicon.png">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
@@ -116,7 +116,7 @@
 
         .nav-buttons { display: flex; gap: 10px; align-items: center; }
 
-        /* --- COLLAPSIBLE PANELS --- */
+        /* --- COLLAPSIBLE PANELS & NAV BUTTONS --- */
         .btn-nav {
             background-color: transparent; color: var(--primary); border: 1px solid var(--primary);
             padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;
@@ -125,9 +125,19 @@
         }
         .btn-nav.active, .btn-nav:hover { background-color: var(--primary); color: white; }
         .btn-nav.icon-only { padding: 8px; }
-        
         [data-theme="dark"] .btn-nav { color: #93c5fd; border-color: #93c5fd; }
         [data-theme="dark"] .btn-nav.active, [data-theme="dark"] .btn-nav:hover { background-color: rgba(96, 165, 250, 0.15); }
+
+        /* Custom Red Nav Button for Clear Scores */
+        .btn-nav-danger {
+            background-color: transparent; color: var(--danger); border: 1px solid var(--danger);
+            padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;
+            transition: all 0.2s; font-family: inherit; font-size: 0.95em;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-nav-danger:hover { background-color: var(--danger); color: white; }
+        [data-theme="dark"] .btn-nav-danger { color: #f87171; border-color: #f87171; }
+        [data-theme="dark"] .btn-nav-danger:hover { background-color: rgba(239, 68, 68, 0.15); color: #f87171;}
 
         .anim-icon { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 
@@ -157,14 +167,14 @@
         button:hover, label.btn:hover { background-color: var(--primary); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
         button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; transform: none; box-shadow: none; }
         
-        [data-theme="dark"] button:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav) { 
+        [data-theme="dark"] button:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav):not(.btn-nav-danger) { 
             background-color: var(--input-bg); border: 1px solid var(--border); color: var(--text-dark); 
         }
-        [data-theme="dark"] label.btn:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav) { 
+        [data-theme="dark"] label.btn:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav):not(.btn-nav-danger) { 
             background-color: var(--input-bg); border: 1px solid var(--border); color: var(--text-dark); 
         }
-        [data-theme="dark"] button:hover:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav) { background-color: var(--border); }
-        [data-theme="dark"] label.btn:hover:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav) { background-color: var(--border); }
+        [data-theme="dark"] button:hover:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav):not(.btn-nav-danger) { background-color: var(--border); }
+        [data-theme="dark"] label.btn:hover:not(.btn-success):not(.btn-danger):not(.btn-warning):not(.btn-purple):not(.btn-darkred):not(.btn-nav):not(.btn-nav-danger) { background-color: var(--border); }
         
         .btn-success { background-color: var(--primary); color: white;}
         [data-theme="dark"] .btn-success { background-color: rgba(96, 165, 250, 0.15); color: #93c5fd; border-color: rgba(96, 165, 250, 0.3); }
@@ -181,6 +191,9 @@
         .btn-small { padding: 4px 8px; font-size: 12px; margin-top: 5px; }
         .btn-icon { padding: 4px 8px; font-size: 14px;}
         input[type="file"] { display: none; }
+        
+        .edit-only { display: none; }
+        .grade-only { display: inline-block; }
         
         /* --- MAIN HEADER --- */
         .main-grading-header {
@@ -203,17 +216,24 @@
         .score-display { font-size: 1.4em; font-weight: 600; color: var(--text-light); text-align: right; }
         #totalScore { color: var(--primary); font-weight: 700; font-size: 1.2em; }
 
-        /* --- AI TEXT AREAS --- */
+        /* --- AI TEXT AREAS (COLOR CODED) --- */
         .ai-instruction-box { display: flex; flex-direction: column; gap: 6px; width: 100%; }
         .ai-instruction-box label { font-size: 0.85em; font-weight: bold; color: var(--text-light); display: flex; align-items: center; gap: 5px; }
+        
         .ai-instruction-box textarea {
             padding: 10px; font-size: 0.9em; width: 100%; resize: vertical; box-sizing: border-box;
-            border: 1px solid var(--border); border-radius: 4px;
-            font-family: inherit; transition: all 0.2s; background: var(--input-bg); color: var(--text-dark);
+            border-radius: 4px; transition: all 0.2s; height: 100px;
         }
-        #aiPromptInput { height: 50px; }
-        #learnedRulesInput { height: 80px; font-family: monospace; background: rgba(0, 47, 108, 0.03); border-color: var(--secondary); }
-        [data-theme="dark"] #learnedRulesInput { background: rgba(96, 165, 250, 0.05); }
+        
+        /* Blue Scheme for Manual Prompts */
+        .blue-scheme-box { background: rgba(44, 82, 156, 0.05); border: 1px solid var(--secondary); color: var(--text-dark); font-family: inherit;}
+        .blue-scheme-box:focus { outline: none; box-shadow: 0 0 0 3px rgba(44, 82, 156, 0.15); }
+        [data-theme="dark"] .blue-scheme-box { background: rgba(96, 165, 250, 0.05); border-color: #38bdf8; }
+        
+        /* Red Scheme for Extracted Rules */
+        .red-scheme-box { background: rgba(200, 16, 46, 0.05); border: 1px solid var(--danger); color: var(--text-dark); font-family: monospace; }
+        .red-scheme-box:focus { outline: none; box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.15); }
+        [data-theme="dark"] .red-scheme-box { background: rgba(248, 113, 113, 0.05); border-color: #f87171; }
         
         .save-status { font-size: 0.85em; font-weight: bold; color: var(--text-light); margin-left: auto; padding: 4px 10px; border-radius: 4px; background: var(--input-bg); border: 1px solid var(--border); display: flex; align-items: center; gap: 4px;}
         .save-status.active { color: var(--primary); border-color: var(--primary); background: rgba(0, 47, 108, 0.05); }
@@ -381,7 +401,7 @@
 
 <div id="teachModal" class="modal-overlay">
     <div class="modal-content">
-        <h3><span class="material-symbols-outlined">psychology</span> Teach AI: The Training Cart</h3>
+        <h3><span class="material-symbols-outlined">psychology</span> Teach GrAIder: The Training Cart</h3>
         <p style="font-size: 0.9em; color: var(--text-light); margin-bottom: 20px;">Provide a student's document and their graded JSON. The app will pair them automatically. Build up a batch, then click Start Learning!</p>
         
         <div class="drop-zone-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -409,7 +429,7 @@
         <div class="top-nav">
             <div id="projectTitleContainer"></div>
             <div class="nav-buttons">
-                <button class="btn-nav" onclick="clearGrades()" title="Clear all scores">
+                <button class="btn-nav-danger" onclick="clearGrades()" title="Clear all scores">
                     <span class="material-symbols-outlined">clear_all</span> <span class="hide-mobile">Clear Scores</span>
                 </button>
                 <button id="btnSetup" class="btn-nav" onclick="toggleSetup()" title="Toggle Setup & Edit Mode">
@@ -446,30 +466,33 @@
         <div id="aiWrapper" class="collapsible-panel collapsed">
             <div class="panel-inner">
                 <div class="panel-content">
-                    <div class="controls-row" style="justify-content: center;">
-                        <label class="btn btn-purple" for="autoGradeFile" title="Have AI Grade Student PDFs (Review One-by-One)"><span class="material-symbols-outlined">robot_2</span> AI Grade Review</label>
+                    
+                    <div class="controls-row" style="justify-content: flex-start;">
+                        <label class="btn btn-info grade-only" for="autoGradeFile" title="Have AI Grade Student PDFs (Review One-by-One)"><span class="material-symbols-outlined">robot_2</span> Review GrAIder</label>
                         <input type="file" id="autoGradeFile" accept=".pdf, .png, .jpg, .jpeg" multiple>
 
-                        <label class="btn btn-darkred" for="batchGradeFile" title="Silent Batch Auto-Grade directly to Folder"><span class="material-symbols-outlined">rocket_launch</span> Silent Batch AI</label>
+                        <label class="btn btn-purple grade-only" for="batchGradeFile" title="Silent Batch Auto-Grade directly to Folder"><span class="material-symbols-outlined">rocket_launch</span> Batch GrAIder</label>
                         <input type="file" id="batchGradeFile" accept=".pdf, .png, .jpg, .jpeg" multiple>
                     </div>
                     
-                    <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap; margin-top: 5px;">
+                        
                         <div class="ai-instruction-box" style="flex: 1; min-width: 250px;">
-                            <label for="aiPromptInput"><span class="material-symbols-outlined">chat</span> AI Grading Instructions (Saves with Template):</label>
-                            <textarea id="aiPromptInput" placeholder="e.g., Don't grade the video presentation section. Be strict on citations." oninput="currentRubric.aiPrompt = this.value"></textarea>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label for="aiPromptInput"><span class="material-symbols-outlined">chat</span> Manual AI Instructions (Saves w/ Template):</label>
+                            </div>
+                            <textarea id="aiPromptInput" class="blue-scheme-box" placeholder="e.g., Don't grade the video presentation section. Be strict on citations." oninput="currentRubric.aiPrompt = this.value"></textarea>
                         </div>
 
-                        <div class="ai-instruction-box" style="flex: 1; min-width: 250px;">
-                            <label for="learnedRulesInput"><span class="material-symbols-outlined">rule</span> Extracted Teacher Rules (Edit/Delete as needed):</label>
-                            <textarea id="learnedRulesInput" placeholder="Rules extracted from the Teach AI tool will appear here..." oninput="updateLearnedRules(this.value)"></textarea>
+                        <div class="ai-instruction-box edit-only" style="flex: 1; min-width: 250px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label for="learnedRulesInput"><span class="material-symbols-outlined">rule</span> Extracted Rules (Edit/Delete):</label>
+                                <button class="btn btn-danger btn-small" style="margin:0;" onclick="openTeachModal()" title="Teach GrAIder by batching PDF and JSON pairs"><span class="material-symbols-outlined" style="font-size: 14px;">psychology</span> Teach GrAIder</button>
+                            </div>
+                            <textarea id="learnedRulesInput" class="red-scheme-box" placeholder="Rules extracted from the Teach GrAIder tool will appear here..." oninput="updateLearnedRules(this.value)"></textarea>
                         </div>
                     </div>
 
-                    <div style="margin-top: 5px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 5px;">
-                        <button class="btn btn-purple" onclick="openTeachModal()" title="Teach AI by batching PDF and JSON pairs"><span class="material-symbols-outlined">psychology</span> Teach AI Logic</button>
-                        <span style="font-size: 0.85em; color: var(--text-light); text-align: center;">(Logic extracted here will automatically save with your Rubric Template)</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -682,24 +705,38 @@
         const btn = document.getElementById('btnSetup');
         
         isSetupOpen = !isSetupOpen;
-        isEditMode = isSetupOpen; 
-        
         setupRot += 180;
         icon.style.transform = `rotate(${setupRot}deg)`;
 
-        const addContainer = document.getElementById('addCriterionContainer');
-        const overallContainer = document.getElementById('overallCommentsContainer');
-
         if (isSetupOpen) {
             wrapper.classList.remove('collapsed'); wrapper.classList.add('open'); btn.classList.add('active');
-            addContainer.style.display = 'block'; overallContainer.style.display = 'none';
+            
+            // Automatically enter edit mode when Setup opens
+            if (!isEditMode) {
+                isEditMode = true;
+                document.getElementById('addCriterionContainer').style.display = 'block';
+                document.getElementById('overallCommentsContainer').style.display = 'none';
+                document.querySelectorAll('.edit-only').forEach(el => el.style.display = 'inline-flex');
+                document.querySelectorAll('.grade-only').forEach(el => el.style.display = 'none');
+                renderRubric();
+            }
+
             if (isAIOpen) toggleAI(); 
         } else {
             wrapper.classList.add('collapsed'); wrapper.classList.remove('open'); btn.classList.remove('active');
-            addContainer.style.display = 'none'; overallContainer.style.display = 'block';
-            updateMaxScore(); 
+            
+            // Automatically exit edit mode when Setup closes
+            if (isEditMode) {
+                isEditMode = false;
+                document.getElementById('addCriterionContainer').style.display = 'none';
+                document.getElementById('overallCommentsContainer').style.display = 'block';
+                document.querySelectorAll('.edit-only').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.grade-only').forEach(el => el.style.display = 'inline-block');
+                updateMaxScore();
+                renderRubric();
+            }
         }
-        handleScrollForFloatBtn(); renderRubric();
+        handleScrollForFloatBtn();
     }
 
     function toggleAI() {
@@ -854,6 +891,9 @@
         } else {
             if(icon) icon.innerText = 'dark_mode'; 
         }
+
+        document.querySelectorAll('.edit-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.grade-only').forEach(el => el.style.display = 'inline-block');
 
         updateMaxScore(); clearGrades(); updateExportButtonUI();
         window.addEventListener('scroll', handleScrollForFloatBtn);
