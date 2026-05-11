@@ -90,6 +90,13 @@
         /* --- ICONS --- */
         .material-symbols-outlined { font-size: 1.2em; display: inline-block; vertical-align: middle; }
         
+        @keyframes pulse-anim {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); opacity: 0.8; }
+            100% { transform: scale(1); }
+        }
+        .pulsing { animation: pulse-anim 1.5s infinite ease-in-out; }
+
         .sticky-top {
             position: sticky; top: 0; background: var(--header-bg); 
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -174,9 +181,6 @@
         .btn-small { padding: 4px 8px; font-size: 12px; margin-top: 5px; }
         .btn-icon { padding: 4px 8px; font-size: 14px;}
         input[type="file"] { display: none; }
-        
-        .edit-only { display: none; }
-        .grade-only { display: inline-block; }
         
         /* --- MAIN HEADER --- */
         .main-grading-header {
@@ -405,7 +409,10 @@
         <div class="top-nav">
             <div id="projectTitleContainer"></div>
             <div class="nav-buttons">
-                <button id="btnSetup" class="btn-nav" onclick="toggleSetup()" title="Toggle Setup & Settings">
+                <button class="btn-nav" onclick="clearGrades()" title="Clear all scores">
+                    <span class="material-symbols-outlined">clear_all</span> <span class="hide-mobile">Clear Scores</span>
+                </button>
+                <button id="btnSetup" class="btn-nav" onclick="toggleSetup()" title="Toggle Setup & Edit Mode">
                     <span id="gearIcon" class="material-symbols-outlined anim-icon">settings</span> <span class="hide-mobile">Setup</span>
                 </button>
                 <button id="btnAI" class="btn-nav" onclick="toggleAI()" title="Toggle AI Engine Tools">
@@ -420,24 +427,17 @@
         <div id="setupWrapper" class="collapsible-panel collapsed">
             <div class="panel-inner">
                 <div class="panel-content">
-                    <div class="controls-row">
-                        <button id="toggleEditBtn" class="btn-warning" onclick="toggleEditMode()" title="Enter Edit Mode"><span class="material-symbols-outlined">edit</span> Edit Rubric</button>
-                        <span class="btn-separator" style="border-left: 2px solid var(--border); height: 30px; margin: 0 10px;"></span>
+                    <div class="controls-row" style="justify-content: center;">
+                        <button class="btn" onclick="selectSaveDirectory()" title="Set Master Folder for auto-saving"><span class="material-symbols-outlined">create_new_folder</span> Set Save Folder</button>
+                        <span id="saveStatus" class="save-status"><span class="material-symbols-outlined" style="font-size: 1.1em;">folder_off</span> No folder</span>
                         
-                        <label class="btn btn-info grade-only" for="loadStudentFile" title="Load a previously saved student grade"><span class="material-symbols-outlined">folder_open</span> Load Student</label>
-                        <input type="file" id="loadStudentFile" accept=".json">
-                        
-                        <button class="btn grade-only" onclick="selectSaveDirectory()" title="Set Master Folder for auto-saving"><span class="material-symbols-outlined">create_new_folder</span> Set Save Folder</button>
-                        <span id="saveStatus" class="save-status grade-only"><span class="material-symbols-outlined" style="font-size: 1.1em;">folder_off</span> No folder</span>
-                        
-                        <label class="btn btn-warning edit-only" for="autoBuildFile" style="margin-left: auto;" title="Auto-Build Rubric (PDF/Image)"><span class="material-symbols-outlined">auto_fix_high</span> Auto-Build</label>
+                        <label class="btn btn-warning" for="autoBuildFile" title="Auto-Build Rubric (PDF/Image)"><span class="material-symbols-outlined">auto_fix_high</span> Auto-Build</label>
                         <input type="file" id="autoBuildFile" accept=".pdf, .png, .jpg, .jpeg">
 
-                        <label class="btn edit-only" for="uploadRubric" title="Load an existing Rubric Template"><span class="material-symbols-outlined">upload_file</span> Load Template</label>
+                        <label class="btn btn-info" for="uploadRubric" title="Load an existing Rubric Template"><span class="material-symbols-outlined">upload_file</span> Load Template</label>
                         <input type="file" id="uploadRubric" accept=".json">
                         
-                        <button class="edit-only btn-success" onclick="exportRubricTemplate()" title="Export current Rubric as Template"><span class="material-symbols-outlined">save</span> Save Template</button>
-                        <button onclick="clearGrades()" class="btn-danger edit-only" title="Reset all student grades"><span class="material-symbols-outlined">delete</span> Reset Grades</button>
+                        <button class="btn-success" onclick="exportRubricTemplate()" title="Export current Rubric as Template"><span class="material-symbols-outlined">save</span> Save Template</button>
                     </div>
                 </div>
             </div>
@@ -446,14 +446,12 @@
         <div id="aiWrapper" class="collapsible-panel collapsed">
             <div class="panel-inner">
                 <div class="panel-content">
-                    <div class="controls-row">
-                        <label class="btn btn-purple grade-only" for="autoGradeFile" title="Have AI Grade Student PDFs (Review One-by-One)"><span class="material-symbols-outlined">robot_2</span> AI Grade Review</label>
+                    <div class="controls-row" style="justify-content: center;">
+                        <label class="btn btn-purple" for="autoGradeFile" title="Have AI Grade Student PDFs (Review One-by-One)"><span class="material-symbols-outlined">robot_2</span> AI Grade Review</label>
                         <input type="file" id="autoGradeFile" accept=".pdf, .png, .jpg, .jpeg" multiple>
 
-                        <label class="btn btn-darkred grade-only" for="batchGradeFile" title="Silent Batch Auto-Grade directly to Folder"><span class="material-symbols-outlined">rocket_launch</span> Silent Batch AI</label>
+                        <label class="btn btn-darkred" for="batchGradeFile" title="Silent Batch Auto-Grade directly to Folder"><span class="material-symbols-outlined">rocket_launch</span> Silent Batch AI</label>
                         <input type="file" id="batchGradeFile" accept=".pdf, .png, .jpg, .jpeg" multiple>
-
-                        <button class="btn btn-purple edit-only" onclick="openTeachModal()" title="Teach AI by batching PDF and JSON pairs"><span class="material-symbols-outlined">psychology</span> Teach AI Logic</button>
                     </div>
                     
                     <div style="display: flex; gap: 15px; width: 100%; flex-wrap: wrap;">
@@ -462,19 +460,28 @@
                             <textarea id="aiPromptInput" placeholder="e.g., Don't grade the video presentation section. Be strict on citations." oninput="currentRubric.aiPrompt = this.value"></textarea>
                         </div>
 
-                        <div class="ai-instruction-box edit-only" style="flex: 1; min-width: 250px;">
+                        <div class="ai-instruction-box" style="flex: 1; min-width: 250px;">
                             <label for="learnedRulesInput"><span class="material-symbols-outlined">rule</span> Extracted Teacher Rules (Edit/Delete as needed):</label>
                             <textarea id="learnedRulesInput" placeholder="Rules extracted from the Teach AI tool will appear here..." oninput="updateLearnedRules(this.value)"></textarea>
                         </div>
+                    </div>
+
+                    <div style="margin-top: 5px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <button class="btn btn-purple" onclick="openTeachModal()" title="Teach AI by batching PDF and JSON pairs"><span class="material-symbols-outlined">psychology</span> Teach AI Logic</button>
+                        <span style="font-size: 0.85em; color: var(--text-light); text-align: center;">(Logic extracted here will automatically save with your Rubric Template)</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="main-grading-header">
-            <div class="student-info">
+            <div class="student-info" style="width: 100%;">
                 <label for="studentName">Student/Group:</label>
-                <input type="text" id="studentName" placeholder="Enter name(s) here...">
+                <div style="display:flex; gap:10px; width: 100%; align-items: center;">
+                    <input type="text" id="studentName" placeholder="Enter name(s) here..." style="max-width: 400px; flex-grow: 1;">
+                    <label class="btn btn-info" for="loadStudentFile" title="Import a previously saved student JSON" style="margin: 0;"><span class="material-symbols-outlined">upload</span> Import</label>
+                    <input type="file" id="loadStudentFile" accept=".json">
+                </div>
             </div>
             
             <div class="header-right">
@@ -502,14 +509,11 @@
 
 <script>
     let isEditMode = false;
+    let isSetupOpen = false;
+    let isAIOpen = false; 
+    let setupRot = 0; 
     let reportDirectoryHandle = null; 
     let jsonDirectoryHandle = null;
-
-    // UI State
-    let isSetupOpen = false;
-    let isAIOpen = false;
-    let setupRot = 0;
-    let aiRot = 0;
 
     let reviewQueue = [];
     let funnyInterval;
@@ -678,18 +682,24 @@
         const btn = document.getElementById('btnSetup');
         
         isSetupOpen = !isSetupOpen;
-        setupRot += 90;
+        isEditMode = isSetupOpen; 
+        
+        setupRot += 180;
         icon.style.transform = `rotate(${setupRot}deg)`;
 
+        const addContainer = document.getElementById('addCriterionContainer');
+        const overallContainer = document.getElementById('overallCommentsContainer');
+
         if (isSetupOpen) {
-            wrapper.classList.remove('collapsed');
-            wrapper.classList.add('open');
-            btn.classList.add('active');
+            wrapper.classList.remove('collapsed'); wrapper.classList.add('open'); btn.classList.add('active');
+            addContainer.style.display = 'block'; overallContainer.style.display = 'none';
+            if (isAIOpen) toggleAI(); 
         } else {
-            wrapper.classList.add('collapsed');
-            wrapper.classList.remove('open');
-            btn.classList.remove('active');
+            wrapper.classList.add('collapsed'); wrapper.classList.remove('open'); btn.classList.remove('active');
+            addContainer.style.display = 'none'; overallContainer.style.display = 'block';
+            updateMaxScore(); 
         }
+        handleScrollForFloatBtn(); renderRubric();
     }
 
     function toggleAI() {
@@ -698,17 +708,14 @@
         const btn = document.getElementById('btnAI');
         
         isAIOpen = !isAIOpen;
-        aiRot += 360;
-        icon.style.transform = `rotate(${aiRot}deg)`;
 
         if (isAIOpen) {
-            wrapper.classList.remove('collapsed');
-            wrapper.classList.add('open');
-            btn.classList.add('active');
+            wrapper.classList.remove('collapsed'); wrapper.classList.add('open'); btn.classList.add('active');
+            icon.classList.add('pulsing'); 
+            if (isSetupOpen) toggleSetup(); 
         } else {
-            wrapper.classList.add('collapsed');
-            wrapper.classList.remove('open');
-            btn.classList.remove('active');
+            wrapper.classList.add('collapsed'); wrapper.classList.remove('open'); btn.classList.remove('active');
+            icon.classList.remove('pulsing');
         }
     }
 
@@ -717,26 +724,22 @@
         const icon = document.getElementById('themeIcon');
         
         if (body.getAttribute('data-theme') === 'dark') {
-            body.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'light');
-            if(icon) icon.innerText = 'dark_mode'; // Show moon
+            body.removeAttribute('data-theme'); localStorage.setItem('theme', 'light');
+            if(icon) icon.innerText = 'dark_mode'; 
         } else {
-            body.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            if(icon) icon.innerText = 'light_mode'; // Show sun
+            body.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark');
+            if(icon) icon.innerText = 'light_mode'; 
         }
     }
 
-    // --- TEACH AI MODAL LOGIC (THE TRAINING CART) ---
+    // --- TEACH AI MODAL LOGIC ---
     let teachDocFile = null;
     let teachJsonFile = null;
     let teachQueue = [];
 
     function openTeachModal() {
         document.getElementById('teachModal').style.display = 'flex';
-        teachQueue = [];
-        resetTeachDropZones();
-        renderTeachQueue();
+        teachQueue = []; resetTeachDropZones(); renderTeachQueue();
     }
 
     function closeTeachModal() { document.getElementById('teachModal').style.display = 'none'; }
@@ -752,8 +755,7 @@
     }
 
     function setupDropZone(zoneId, inputId, expectedType) {
-        const zone = document.getElementById(zoneId);
-        const input = document.getElementById(inputId);
+        const zone = document.getElementById(zoneId); const input = document.getElementById(inputId);
         zone.addEventListener('click', () => input.click());
         zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
         zone.addEventListener('dragleave', () => { zone.classList.remove('dragover'); });
@@ -833,8 +835,7 @@
             } catch (err) { console.error(err); alert(`Teach AI Failed on pair ${i+1} (${pair.json.name})!\n\n` + err.message); }
         }
 
-        clearInterval(funnyInterval);
-        document.getElementById('loadingOverlay').style.display = 'none';
+        clearInterval(funnyInterval); document.getElementById('loadingOverlay').style.display = 'none';
         document.getElementById('loadingSubtext').innerText = "This usually takes 5-15 seconds.";
         renderRubric(); 
         if (newRulesCount > 0) {
@@ -849,13 +850,10 @@
         const icon = document.getElementById('themeIcon');
         if (localStorage.getItem('theme') === 'dark') {
             body.setAttribute('data-theme', 'dark');
-            if(icon) icon.innerText = 'light_mode'; // Show sun if dark mode is active
+            if(icon) icon.innerText = 'light_mode'; 
         } else {
-            if(icon) icon.innerText = 'dark_mode'; // Default to moon if light mode is active
+            if(icon) icon.innerText = 'dark_mode'; 
         }
-
-        document.querySelectorAll('.edit-only').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('.grade-only').forEach(el => el.style.display = 'inline-block');
 
         updateMaxScore(); clearGrades(); updateExportButtonUI();
         window.addEventListener('scroll', handleScrollForFloatBtn);
@@ -1027,7 +1025,7 @@
     function handleScrollForFloatBtn() {
         const btn = document.getElementById('smartFillBtn');
         if (!btn) return;
-        if (window.scrollY > 150 && !isEditMode) { btn.classList.add('visible'); } else { btn.classList.remove('visible'); }
+        if (window.scrollY > 150 && !isSetupOpen) { btn.classList.add('visible'); } else { btn.classList.remove('visible'); }
     }
 
     function autoFillMaxPoints() {
@@ -1050,34 +1048,6 @@
             if (!crit.levels || crit.levels.length === 0) return total; return total + Math.max(...crit.levels.map(l => l.points));
         }, 0);
         document.getElementById('maxScore').innerText = max;
-    }
-
-    function toggleEditMode() {
-        isEditMode = !isEditMode;
-        const btn = document.getElementById('toggleEditBtn');
-        const addContainer = document.getElementById('addCriterionContainer');
-        const overallContainer = document.getElementById('overallCommentsContainer');
-        const editEls = document.querySelectorAll('.edit-only');
-        const gradeEls = document.querySelectorAll('.grade-only');
-
-        if (isEditMode) {
-            btn.innerHTML = `<span class="material-symbols-outlined">save</span> Save Layout`; 
-            btn.classList.remove('btn-warning'); btn.classList.add('btn-success');
-            addContainer.style.display = 'block'; overallContainer.style.display = 'none'; 
-            editEls.forEach(el => el.style.display = 'inline-flex'); gradeEls.forEach(el => el.style.display = 'none');
-            
-            // Auto-open Setup if it isn't so they can see the save template button
-            if (!isSetupOpen) toggleSetup();
-            // Auto-open AI to show rules editor
-            if (!isAIOpen) toggleAI();
-        } else {
-            btn.innerHTML = `<span class="material-symbols-outlined">edit</span> Edit Rubric`; 
-            btn.classList.remove('btn-success'); btn.classList.add('btn-warning');
-            addContainer.style.display = 'none'; overallContainer.style.display = 'block';
-            updateMaxScore(); 
-            editEls.forEach(el => el.style.display = 'none'); gradeEls.forEach(el => el.style.display = 'inline-flex');
-        }
-        handleScrollForFloatBtn(); renderRubric();
     }
 
     function renderRubric() {
@@ -1271,75 +1241,6 @@
         document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
-    function generateStandaloneReport(studentName, projectTitle, totalScore) {
-        let maxCols = 0;
-        if (currentRubric.criteria.length > 0) { maxCols = Math.max(...currentRubric.criteria.map(c => c.levels.length)); }
-
-        let html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${escapeHTML(studentName)} - ${escapeHTML(projectTitle)}</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.5; color: #333; max-width: 1100px; margin: 0 auto; padding: 40px; background: #ffffff; position: relative; }
-        body::before { content: ""; position: absolute; top: 0; right: 0; width: 450px; height: 450px; background-image: url('WalEngNoBG.png'); background-size: contain; background-repeat: no-repeat; background-position: top right; opacity: 0.1; pointer-events: none; z-index: -1; }
-        .header { text-align: left; border-bottom: 3px solid #002f6c; padding-bottom: 20px; margin-bottom: 30px; position: relative; z-index: 1; }
-        h1 { color: #002f6c; margin: 0 0 10px 0; font-size: 2.2em; font-weight: bold; }
-        h2 { color: #555; margin: 0; font-size: 1.4em; font-weight: normal; }
-        .total-score { font-size: 1.8em; font-weight: bold; color: #c8102e; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; table-layout: fixed; position: relative; z-index: 1; }
-        th, td { border: 1px solid #bdc3c7; padding: 12px; vertical-align: top; font-size: 0.9em; word-wrap: break-word; }
-        .crit-title { font-weight: bold; width: 15%; background-color: #eef2f7; color: #002f6c; border-right: none; }
-        .level-cell { position: relative; }
-        .selected { background-color: #e6f0fa; border: 2px solid #002f6c; border-left: 1px solid #002f6c; }
-        .selected::before { content: '✓'; position: absolute; top: 5px; right: 8px; color: #002f6c; font-weight: bold; font-size: 1.2em; }
-        .level-pts { color: #c8102e; font-weight: bold; display: block; margin-bottom: 5px; background: #f9f9fb; border: 1px solid #bdc3c7; padding: 2px 6px; border-radius: 4px; display: inline-block; }
-        .level-title { font-weight: bold; color: #002f6c; display: block; margin-bottom: 5px; }
-        .score-col { font-weight: bold; text-align: center; width: 80px; background-color: #eef2f7; color: #002f6c; font-size: 1.1em; vertical-align: middle; border-left: none; }
-        .comment-row td { background-color: white; padding: 15px; border-top: none; }
-        .comment-box { border-left: 4px solid #2c529c; padding-left: 15px; margin: 0; white-space: pre-wrap; font-style: italic; background: #f9f9fb; padding: 10px 15px; border-radius: 0 4px 4px 0; }
-        .overall-comments { margin-top: 30px; background: #f9f9fb; padding: 20px; border-radius: 6px; border-left: 5px solid #002f6c; border: 1px solid #bdc3c7; border-left-width: 5px; position: relative; z-index: 1; }
-        .overall-comments h3 { color: #002f6c; margin-top: 0; margin-bottom: 15px; }
-        .overall-comments div { white-space: pre-wrap; }
-        @media print {
-            body { padding: 0; max-width: 100%; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-            .selected { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .crit-title, .score-col, .level-pts, .comment-box, .overall-comments { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>${escapeHTML(projectTitle)}</h1>
-        <h2>Student: <strong>${escapeHTML(studentName)}</strong></h2>
-        <div class="total-score">Total Score: ${totalScore} / ${document.getElementById('maxScore').innerText}</div>
-    </div>
-    <table>`;
-
-        currentRubric.criteria.forEach((crit, i) => {
-            html += `<tr><td class="crit-title">${escapeHTML(crit.name)}</td>`;
-            crit.levels.forEach((level) => {
-                let isSelected = (isGraded[i] && scores[i] === level.points) ? 'selected' : '';
-                html += `<td class="level-cell ${isSelected}"><span class="level-pts">${level.points} pts</span><span class="level-title">${escapeHTML(level.title)}</span><span>${escapeHTML(level.desc)}</span></td>`;
-            });
-            let emptyCellsRequired = maxCols - crit.levels.length;
-            for (let j = 0; j < emptyCellsRequired; j++) { html += `<td></td>`; }
-            html += `<td class="score-col">${scores[i]}</td></tr>`;
-            if (comments[i] && comments[i].trim() !== '') {
-                html += `<tr class="comment-row"><td colspan="${maxCols + 2}"><div class="comment-box"><strong>Feedback:</strong><br>${escapeHTML(comments[i])}</div></td></tr>`;
-            }
-        });
-        html += `</table>`;
-        if (overallComment && overallComment.trim() !== '') {
-            html += `<div class="overall-comments"><h3>Overall Project Feedback</h3><div>${escapeHTML(overallComment)}</div></div>`;
-        }
-        html += `</body></html>`;
-        return html;
-    }
-
     async function exportStudentDataAndReport() {
         let studentName = document.getElementById('studentName').value.trim();
         let missingGrades = [];
@@ -1360,7 +1261,7 @@
             if (!reportDirectoryHandle) return; 
         }
 
-        if(isEditMode) toggleEditMode();
+        if(isSetupOpen) toggleSetup();
 
         let safeStudent = studentName ? studentName.replace(/[^a-z0-9\s]/gi, '_').trim() : "Unnamed";
         let projectTitle = currentRubric.title || "Untitled Project";
@@ -1396,9 +1297,28 @@
 
     async function exportRubricTemplate() {
         const dataStr = JSON.stringify(currentRubric, null, 2);
-        const filename = (currentRubric.title || "Rubric").replace(/[^a-z0-9\s]/gi, '_').trim() + "_Template.json";
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        fallbackDownload(filename, blob);
+        const defaultName = (currentRubric.title || "Rubric").replace(/[^a-z0-9\s]/gi, '_').trim() + "_Template.json";
+        
+        try {
+            if (window.showSaveFilePicker) {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: defaultName,
+                    types: [{ description: 'JSON File', accept: {'application/json': ['.json']} }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(dataStr);
+                await writable.close();
+            } else {
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                fallbackDownload(defaultName, blob);
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Save failed', err);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                fallbackDownload(defaultName, blob);
+            }
+        }
     }
 
     function escapeHTML(str) {
