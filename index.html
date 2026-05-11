@@ -479,7 +479,7 @@
             
             <div class="header-right">
                 <div class="score-display">
-                    Total: <span id="totalScore">0</span> / <span id="maxScore">105</span>
+                    Total: <span id="totalScore">0</span> / <span id="maxScore">100</span>
                 </div>
                 <button id="exportMainBtn" class="btn-success grade-only" style="padding: 10px 20px; font-size: 1.1em; width: 100%; justify-content: center;" onclick="exportStudentDataAndReport()" title="Export Student (HTML Report & Data)">🖨️ Export</button>
             </div>
@@ -502,8 +502,8 @@
 
 <script>
     let isEditMode = false;
-    let isSettingsOpen = true; // Tracks the state of the settings menu
-    let currentGearRotation = 0; // Tracks the physical spin of the gear icon
+    let isSettingsOpen = true; 
+    let currentGearRotation = 0; 
     let reportDirectoryHandle = null; 
     let jsonDirectoryHandle = null;
 
@@ -523,126 +523,140 @@
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzp9F_goegloh-FxMFXpGw3FLmkA6kD_nYbNnQs5uBZCr54DLO1euaT2S19hzvARCa_/exec";
 
     let currentRubric = {
-        title: "Imagine the Future",
-        aiPrompt: "Don't grade the Sales Pitch Video or the physical test plan.",
+        title: "Generic Engineering Project",
+        aiPrompt: "Evaluate the student's work strictly based on the rubric criteria. Provide brief, actionable feedback.",
         learnedRules: [], 
         criteria: [
             {
                 name: "Title",
                 levels: [
-                    { points: 5, title: "Jedi Master", desc: "Project Title, Course, Period, date, Rendered picture, Names" },
-                    { points: 3, title: "Padwan Learner", desc: "5 of 6 requirements" },
-                    { points: 1, title: "Sith Apprentice", desc: "Fewer than 5 requirements" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 5, title: "Jedi Master", desc: "Title is clear, professional, and includes all required student information." },
+                    { points: 4, title: "Jedi Knight", desc: "Title is present but missing minor details." },
+                    { points: 3.5, title: "Padwan", desc: "Title is present but lacks professional formatting or several details." },
+                    { points: 3, title: "Youngling", desc: "Title is incomplete or poorly formatted." },
+                    { points: 1.5, title: "Sith Apprentice", desc: "Title is barely present or missing most required information." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Initial Research",
+                name: "Abstract",
                 levels: [
-                    { points: 5, title: "Jedi Master", desc: "Basic description of each listed material. At least one material per person not on list." },
-                    { points: 3, title: "Padwan Learner", desc: "Missing 1 req" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "Excellent summary of the project, clearly stating the problem, solution, and results." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good summary, but lacks a bit of clarity or omits minor details." },
+                    { points: 7.5, title: "Padwan", desc: "Basic summary provided, but missing key elements like results or clear problem statement." },
+                    { points: 6, title: "Youngling", desc: "Abstract is vague, poorly written, or too brief." },
+                    { points: 3, title: "Sith Apprentice", desc: "Abstract does not accurately reflect the project." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Brainstorming List",
+                name: "Design Brief",
                 levels: [
-                    { points: 5, title: "Jedi Master", desc: "List at least 5 inventions per person. Include ideas for at least 2 unique materials per person." },
-                    { points: 3, title: "Padwan Learner", desc: "Missing 1 req" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 5, title: "Jedi Master", desc: "Thorough and clearly defined problem statement, constraints, and deliverables." },
+                    { points: 4, title: "Jedi Knight", desc: "Clear problem statement and constraints, but missing minor details." },
+                    { points: 3.5, title: "Padwan", desc: "Adequate brief, but constraints or deliverables are vague." },
+                    { points: 3, title: "Youngling", desc: "Incomplete brief lacking clear direction." },
+                    { points: 1.5, title: "Sith Apprentice", desc: "Brief is very poor or mostly incorrect." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Detailed Research",
+                name: "Research",
                 levels: [
-                    { points: 5, title: "Jedi Knight", desc: "Missing a few details" },
-                    { points: 4, title: "Jedi Master", desc: "Details a.-g. listed for each material. At least one detailed research per group member." },
-                    { points: 3, title: "Padwan Learner", desc: "Some research done, but mostly does not address prompts a-g." },
-                    { points: 1.56, title: "Sith Apprentice", desc: "Little research done" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 5, title: "Jedi Master", desc: "Comprehensive research covering multiple relevant sources and deeply informing the design." },
+                    { points: 4, title: "Jedi Knight", desc: "Good research from appropriate sources, but lacks some depth." },
+                    { points: 3.5, title: "Padwan", desc: "Basic research completed, but sources are limited or loosely applied to the design." },
+                    { points: 3, title: "Youngling", desc: "Minimal research with few sources." },
+                    { points: 1.5, title: "Sith Apprentice", desc: "Research is almost non-existent or completely irrelevant." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Concept Sketches",
+                name: "Brainstorming List/Sketches",
                 levels: [
-                    { points: 10, title: "Jedi Master", desc: "Concept sketches of 5 top ideas. Includes annotations explaining function, shading, penciling." },
-                    { points: 8, title: "Jedi Knight", desc: "Lacking a little in detail or needs more annotations." },
-                    { points: 5, title: "Padwan Learner", desc: "Missing 1 requirement" },
-                    { points: 2.5, title: "Sith Apprentice", desc: "Missing more than 1 requirement and/or lacking quality." },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "Extensive list of diverse ideas with accompanying rough sketches. Shows deep creative thinking." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good variety of ideas and sketches, but could be pushed further." },
+                    { points: 7.5, title: "Padwan", desc: "Adequate brainstorming, but ideas lack variety or sketches are too vague." },
+                    { points: 6, title: "Youngling", desc: "Few ideas generated; sketches are lacking." },
+                    { points: 3, title: "Sith Apprentice", desc: "Barely any brainstorming evident." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
+                ]
+            },
+            {
+                name: "Annotated Sketches",
+                levels: [
+                    { points: 10, title: "Jedi Master", desc: "High-quality, detailed sketches with clear, informative annotations explaining features." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good sketches and annotations, but missing some clarity or detail." },
+                    { points: 7.5, title: "Padwan", desc: "Sketches are acceptable; annotations are sparse or state the obvious." },
+                    { points: 6, title: "Youngling", desc: "Poor sketch quality or missing most annotations." },
+                    { points: 3, title: "Sith Apprentice", desc: "Sketches are unintelligible or completely lack annotations." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
                 name: "Decision Matrix",
                 levels: [
-                    { points: 10, title: "Jedi Master", desc: "Uses template. Effectively demonstrates considerations. Process clearly communicated. Choice justified." },
-                    { points: 8, title: "Jedi Knight", desc: "Uses Template. Somewhat effective. Choice marginally justified." },
-                    { points: 2, title: "Youngling", desc: "Missing elements or poorly communicates selection process." },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 5, title: "Jedi Master", desc: "Matrix is fully completed with appropriate criteria, weighting, and logical conclusion." },
+                    { points: 4, title: "Jedi Knight", desc: "Matrix is complete, but criteria or weighting could be more refined." },
+                    { points: 3.5, title: "Padwan", desc: "Matrix used, but logic is flawed or some sections are incomplete." },
+                    { points: 3, title: "Youngling", desc: "Matrix is poorly constructed or does not align with the final choice." },
+                    { points: 1.5, title: "Sith Apprentice", desc: "Matrix is barely attempted." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Sales Pitch Video",
+                name: "Final Sketch",
                 levels: [
-                    { points: 20, title: "Yoda", desc: "Jedi Master + WOW factor. Amazing video production/sales pitch!" },
-                    { points: 18, title: "Jedi Master", desc: "Includes all members, under 1 min, answers questions, includes visuals. Appropriate and fun." },
-                    { points: 15, title: "Jedi Knight", desc: "Missing some detail, but technically addresses criteria." },
-                    { points: 10, title: "Padwan Learner", desc: "Missing 1 req or severely lacking in detail" },
-                    { points: 5, title: "Sith Apprentice", desc: "Missing multiple criteria or little effort." },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "Exceptional final sketch showing correct proportions, shading, and all critical details." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Strong final sketch but has minor proportion or detailing issues." },
+                    { points: 7.5, title: "Padwan", desc: "Acceptable final sketch but lacks polish or clarity in design." },
+                    { points: 6, title: "Youngling", desc: "Final sketch is rough and difficult to interpret." },
+                    { points: 3, title: "Sith Apprentice", desc: "Final sketch shows very little effort." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Final Annotated Sketch",
+                name: "CAD Model/Drawings",
                 levels: [
-                    { points: 10, title: "Jedi Master", desc: "Overall sketch and detail sketch of functions, titles, labels. Title block complete." },
-                    { points: 8, title: "Jedi Knight", desc: "Lacking a little in detail or needs more annotations." },
-                    { points: 5, title: "Padwan Learner", desc: "Missing 1 requirement" },
-                    { points: 2.5, title: "Sith Apprentice", desc: "Missing >1 req or lacking quality." },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "Complex, fully constrained CAD model with accurate, fully dimensioned working drawings." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good CAD model and drawings, missing minor dimensions or constraints." },
+                    { points: 7.5, title: "Padwan", desc: "Model is complete but drawings are missing significant dimensions or views." },
+                    { points: 6, title: "Youngling", desc: "Model is incomplete or drawings are very poorly executed." },
+                    { points: 3, title: "Sith Apprentice", desc: "CAD work is barely attempted." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Final CAD Model",
+                name: "Prototype",
                 levels: [
-                    { points: 15, title: "Jedi Master", desc: "Above and beyond, exquisite detail, excellent dimensioning. (Bonus level)" },
-                    { points: 10, title: "Jedi Knight", desc: "Detailed & accurate Multiview, iso/front views, parts list with mass/material. Rendered picture." },
-                    { points: 8, title: "Padwan Learner", desc: "Missing 1 req or lacking detail." },
-                    { points: 5, title: "Sith Apprentice", desc: "Missing >1 req." },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "High-quality, functional prototype that accurately represents the final design." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good prototype but has minor functional or aesthetic flaws." },
+                    { points: 7.5, title: "Padwan", desc: "Prototype is completed but is fragile or only partially represents the design." },
+                    { points: 6, title: "Youngling", desc: "Prototype is poorly constructed and barely holds together." },
+                    { points: 3, title: "Sith Apprentice", desc: "Prototype shows almost no effort." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "CAD Material Screenshot",
+                name: "Evaluation",
                 levels: [
-                    { points: 5, title: "Full Marks", desc: "Screenshot of CAD Material named 'Material Name'" },
-                    { points: 3, title: "Padwan Learner", desc: "Missing any 1 req" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "Deep, thoughtful reflection on testing results, design flaws, and specific improvements." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good evaluation but lacks depth in discussing improvements or testing details." },
+                    { points: 7.5, title: "Padwan", desc: "Basic evaluation; mostly states what happened without critical analysis." },
+                    { points: 6, title: "Youngling", desc: "Evaluation is very brief and lacks insight." },
+                    { points: 3, title: "Sith Apprentice", desc: "Evaluation is barely attempted or completely misses the point." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             },
             {
-                name: "Test plan",
+                name: "Presentation",
                 levels: [
-                    { points: 5, title: "Full Marks", desc: "Written step-by-step plan for performing a material test." },
-                    { points: 3, title: "Padwan Learner", desc: "Lacking in detail or little thought put into process." },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
-                ]
-            },
-            {
-                name: "Project Reflection",
-                levels: [
-                    { points: 5, title: "Jedi Master", desc: "Well thought out answers using 3-4 complete sentences per question." },
-                    { points: 3, title: "Padwan Learner", desc: "Lacking in detail" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
-                ]
-            },
-            {
-                name: "Citations",
-                levels: [
-                    { points: 5, title: "Jedi Master", desc: "APA Citations for research, more than 3 citations" },
-                    { points: 3, title: "Padwan Learner", desc: "Missing 1 req" },
-                    { points: 1, title: "Sith Apprentice", desc: "Missing >1 req" },
-                    { points: 0, title: "Sith Lord", desc: "Missing." }
+                    { points: 10, title: "Jedi Master", desc: "Professional, engaging presentation. Speakers are confident, clear, and well-prepared." },
+                    { points: 8.5, title: "Jedi Knight", desc: "Good presentation but occasionally lacks confidence or flow." },
+                    { points: 7.5, title: "Padwan", desc: "Acceptable presentation, but speakers rely too heavily on reading slides or lack preparation." },
+                    { points: 6, title: "Youngling", desc: "Presentation is disorganized, hard to follow, or too short." },
+                    { points: 3, title: "Sith Apprentice", desc: "Presentation is barely attempted." },
+                    { points: 0, title: "Sith Lord", desc: "Missing entirely." }
                 ]
             }
         ]
@@ -660,7 +674,6 @@
         
         isSettingsOpen = !isSettingsOpen;
         
-        // Spin the gear half a rotation smoothly every click
         currentGearRotation += 180;
         gear.style.transform = `rotate(${currentGearRotation}deg)`;
 
@@ -727,7 +740,6 @@
         }
         zone.classList.add('has-file');
         
-        // Auto-pair if both exist
         if (teachDocFile && teachJsonFile) {
             teachQueue.push({ doc: teachDocFile, json: teachJsonFile });
             resetTeachDropZones();
@@ -815,7 +827,7 @@
         document.getElementById('loadingOverlay').style.display = 'none';
         document.getElementById('loadingSubtext').innerText = "This usually takes 5-15 seconds.";
         
-        renderRubric(); // Updates the visual text box
+        renderRubric(); 
         
         if (newRulesCount > 0) {
             alert(`Success! The AI extracted ${newRulesCount} new rules from the batch.\n\nTotal rules stored: ${currentRubric.learnedRules.length}\n\nDon't forget to click '💾 Template' to save this knowledge!`);
@@ -1205,7 +1217,6 @@
             addContainer.style.display = 'block'; overallContainer.style.display = 'none'; 
             editEls.forEach(el => el.style.display = 'inline-block'); gradeEls.forEach(el => el.style.display = 'none');
             
-            // Auto-open settings if entering Edit Mode
             if (!isSettingsOpen) toggleSettings();
         } else {
             btn.innerHTML = "✏️ Edit"; btn.title = "Enter Edit Mode";
