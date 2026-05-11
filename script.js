@@ -373,7 +373,16 @@ function init() {
                 currentRubric = JSON.parse(e.target.result); 
                 clearGrades(); 
                 updateMaxScore(); 
-                if (isSetupOpen) toggleSetup(); else renderRubric();
+                
+                // Force exit edit mode and visually close the Setup menu if it was open
+                if (isSetupOpen) {
+                    toggleSetup(); 
+                } else {
+                    isEditMode = false;
+                    document.getElementById('addCriterionContainer').style.display = 'none';
+                    document.getElementById('overallCommentsContainer').style.display = 'block';
+                    renderRubric();
+                }
             } 
             catch (err) { alert('Error parsing Rubric JSON file.'); }
         }; reader.readAsText(file); e.target.value = ""; 
@@ -496,7 +505,7 @@ async function processSingleBatchFile(file) {
                     let totalScore = 0; for (let key in batchScores) { totalScore += batchScores[key]; }
 
                     let safeStudent = bestName.replace(/[^a-z0-9\s]/gi, '_').trim(); let safeProject = (currentRubric.title || "Project").replace(/[^a-z0-9\s]/gi, '_').trim();
-                    let jsonFilename = `${safeStudent} - ${safeProject}.json`; let reportFilename = `${safeStudent} - ${safeProject}.html`;
+                    let jsonFilename = `${safeStudent} - ${safeProject}.json`; let reportFilename = `${safeStudent} - ${safeProject} - ${totalScore}.html`;
 
                     const exportData = { type: "StudentGradeRecord", studentName: bestName, projectTitle: currentRubric.title, rubric: currentRubric, scores: batchScores, comments: batchComments, overallComment: "", isGraded: batchGraded };
                     const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -829,7 +838,7 @@ async function exportStudentDataAndReport() {
     let totalScore = document.getElementById('totalScore').innerText;
 
     let jsonFilename = `${safeStudent} - ${safeProject}.json`;
-    let reportFilename = `${safeStudent} - ${safeProject}.html`;
+    let reportFilename = `${safeStudent} - ${safeProject} - ${totalScore}.html`;
 
     const exportData = { type: "StudentGradeRecord", studentName: studentName, projectTitle: projectTitle, rubric: currentRubric, scores: scores, comments: comments, overallComment: overallComment, isGraded: isGraded };
     const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
