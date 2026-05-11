@@ -547,6 +547,7 @@
 <button id="smartFillBtn" onclick="autoFillMaxPoints()" title="Fills max points for all blank rows above your furthest graded row"><span class="material-symbols-outlined">check_circle</span> Fill Max Down To Here</button>
 
 <script>
+    // App State
     let isEditMode = false;
     let isSetupOpen = false;
     let isAIOpen = false; 
@@ -721,7 +722,6 @@
         const btn = document.getElementById('btnSetup');
         
         isSetupOpen = !isSetupOpen;
-        isEditMode = isSetupOpen; 
         
         setupRot += 180;
         icon.style.transform = `rotate(${setupRot}deg)`;
@@ -732,10 +732,11 @@
         if (isSetupOpen) {
             wrapper.classList.remove('collapsed'); wrapper.classList.add('open'); btn.classList.add('active');
             
+            // Auto enter edit mode
             if (!isEditMode) {
                 isEditMode = true;
-                document.getElementById('addCriterionContainer').style.display = 'block';
-                document.getElementById('overallCommentsContainer').style.display = 'none';
+                addContainer.style.display = 'block';
+                overallContainer.style.display = 'none';
                 renderRubric();
             }
 
@@ -743,10 +744,11 @@
         } else {
             wrapper.classList.add('collapsed'); wrapper.classList.remove('open'); btn.classList.remove('active');
             
+            // Auto exit edit mode
             if (isEditMode) {
                 isEditMode = false;
-                document.getElementById('addCriterionContainer').style.display = 'none';
-                document.getElementById('overallCommentsContainer').style.display = 'block';
+                addContainer.style.display = 'none';
+                overallContainer.style.display = 'block';
                 updateMaxScore();
                 renderRubric();
             }
@@ -917,7 +919,13 @@
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                try { currentRubric = JSON.parse(e.target.result); clearGrades(); updateMaxScore(); renderRubric(); } 
+                try { 
+                    currentRubric = JSON.parse(e.target.result); 
+                    clearGrades(); 
+                    updateMaxScore(); 
+                    // Automatically close setup menu upon successful load
+                    if (isSetupOpen) toggleSetup(); else renderRubric();
+                } 
                 catch (err) { alert('Error parsing Rubric JSON file.'); }
             }; reader.readAsText(file); e.target.value = ""; 
         });
