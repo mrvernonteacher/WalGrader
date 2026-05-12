@@ -137,7 +137,7 @@
                 <div class="score-display">
                     Total: <span id="totalScore">0</span> / <span id="maxScore">100</span>
                 </div>
-                <button id="exportMainBtn" class="btn-success grade-only" style="padding: 10px 20px; font-size: 1.1em; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;" onclick="exportStudentDataAndReport()" title="Export Student (HTML Report & Data)"><span class="material-symbols-outlined">sim_card_download</span> Export</button>
+                <button id="exportMainBtn" class="btn-success grade-only" onclick="exportStudentDataAndReport()" title="Export Student (HTML Report & Data)" style="white-space: nowrap;"><span class="material-symbols-outlined">sim_card_download</span> Export</button>
             </div>
         </div>
     </div>
@@ -155,6 +155,7 @@
 </div>
 
 <button id="smartFillBtn" onclick="autoFillMaxPoints()" title="Fills max points for all blank rows above your furthest graded row"><span class="material-symbols-outlined">check_circle</span> Fill Max Down To Here</button>
+
 <button id="askGraiderBtn" onclick="openHelpModal()" title="Ask GrAIder">
     <span class="material-symbols-outlined">support_agent</span>
 </button>
@@ -196,6 +197,7 @@
         </div>
     </div>
 </div>
-<script src="script.js"></script>
+
+<script src="script.js?v=4"></script>
 </body>
 </html>
